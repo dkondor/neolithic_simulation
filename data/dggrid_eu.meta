@@ -1,0 +1,32 @@
+################################################################################
+#
+# dggrid_eu.meta -- metafile for creating a hexagonal grid with linear size
+# 	approx. 10km covering Europe
+#
+# TODO: paths need to be adjusted according to the project directories used!
+# see the README on how to build and run DGGRID
+################################################################################
+
+# specify the operation
+dggrid_operation GENERATE_GRID
+
+# specify the DGG
+dggs_type ISEA3H
+dggs_res_spec 12
+
+# control the generation
+# clip_subset_type WHOLE_EARTH
+clip_subset_type SHAPEFILE
+clip_region_files eu_boundary2.shp
+geodetic_densify 0.1
+
+# specify the output
+cell_output_type SHAPEFILE
+cell_output_file_name dggrid/isea3h12eu
+point_output_type TEXT
+point_output_file_name dggrid/isea3h12eup
+neighbor_output_type TEXT
+neighbor_output_file_name dggrid/isea3h12eun
+densification 0
+precision 8
+

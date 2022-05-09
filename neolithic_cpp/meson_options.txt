@@ -1,0 +1,2 @@
+option('use_cairo', type : 'feature', description : 'Enable creating images with Cairo')
+option('use_openmp', type : 'feature', description : 'Enable OpenMP')
