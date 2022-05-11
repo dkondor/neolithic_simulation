@@ -3,7 +3,7 @@
 This repository contains the simulation code and related scripts for our paper:
 
 Dániel Kondor, James S. Bennett, Detlef Gronenborn, Nicolas Antunes, Daniel Hoyer, Peter Turchin (2022). <br>
-Explaining population booms and busts in Mid-Holocene Europe, to appear
+Explaining population booms and busts in Mid-Holocene Europe. SocArXiv preprint: https://osf.io/preprints/socarxiv/c32up
 
 
 ## Content of this repository
