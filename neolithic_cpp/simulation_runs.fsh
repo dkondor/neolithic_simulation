@@ -101,7 +101,7 @@ end
 # 3.4. generate a set of sampled "events" (to simulate the process of finding radiocarbon dates)
 for G in $G1
 for s in $s1
-zcat $base_dir/simulation/runG"$G"C10ws"$s"sp.out.gz | $program_dir/sr -s (head -c 4 /dev/urandom | hexdump -e '"%u"') -m 5500 -t 41250 > $base_dir/simulation/sample_popn_G"$G1"C10ws$s.dat
+zcat $base_dir/simulation/runG"$G"C10ws"$s"sp.out.gz | $program_dir/sr -s (head -c 4 /dev/urandom | hexdump -e '"%u"') -m 5500 -t 41250 > $base_dir/simulation/sample_popn_G"$G"C10ws$s.dat
 end
 end
 
