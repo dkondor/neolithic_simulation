@@ -56,7 +56,7 @@ end
 # 2.3. create videos of the results with FFMPEG
 for E in $E1
 for A in $A1
-zcat $base_dir/simulation/runmr_G"$G1"_C10_E"$E"_A"$A"_s"$s"sp.out.gz | $program_dir/sp2png -oy -$y1 -op 10 -om 200 -ow 1608 -oh 900 -of $base_dir/simulation/runmr_G"$G1"_C10_E"$E"_A"$A"_s"$s".mkv -oc h264 $base_dir/gaez_crop/eu_dggrid_coords_K_land4a.csv -n $base_dir/dggrid/isea3h12eun.nbr -cp $base_dir/dggrid/dggrid_poly.csv
+zcat $base_dir/simulation/runmr_G"$G1"_C10_E"$E"_A"$A"_s"$s"sp.out.gz | $program_dir/sp2png -oy -$y1 -op 10 -om 200 -ow 1608 -oh 900 -of $base_dir/simulation/runmr_G"$G1"_C10_E"$E"_A"$A"_s"$s".mkv -oc h264 -n $base_dir/dggrid/isea3h12eun.nbr -cp $base_dir/dggrid/dggrid_poly.csv
 end
 end
 
