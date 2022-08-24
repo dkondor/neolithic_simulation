@@ -94,7 +94,7 @@ end
 # 3.3. create videos of the results with FFMPEG
 for G in $G1
 for s in $s1
-zcat $base_dir/simulation/runG"$G"C10ws"$s"sp.out.gz | $program_dir/sp2png -oy -$y1 -op 10 -om 200 -ow 1608 -oh 900 -of $base_dir/simulation/runG"$G"C10ws"$s".mkv -oc h264 $base_dir/gaez_crop/eu_dggrid_coords_K_land4a.csv -n $base_dir/dggrid/isea3h12eun.nbr -cp $base_dir/dggrid/dggrid_poly.csv
+zcat $base_dir/simulation/runG"$G"C10ws"$s"sp.out.gz | $program_dir/sp2png -oy -$y1 -op 10 -om 200 -ow 1608 -oh 900 -of $base_dir/simulation/runG"$G"C10ws"$s".mkv -oc h264 -n $base_dir/dggrid/isea3h12eun.nbr -cp $base_dir/dggrid/dggrid_poly.csv
 end
 end
 
