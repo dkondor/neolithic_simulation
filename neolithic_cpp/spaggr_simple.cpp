@@ -45,6 +45,9 @@ int main(int argc, char **argv)
 		i.e. for cell x, the corresponding regions are region_ids[region_ix[ptix[x]]] -- region_ids[region_ix[ptix[x]+1]] */
 	std::vector<double> res; /* result of the aggregation in each time step (sum of the input) */
 	std::vector<unsigned int> cnts; /* count of nonempty cell in each time step) */
+	bool separate_raiders = false;
+	std::vector<double> res2; /* raider population separately (only if the above is true) */
+	std::vector<unsigned int> cnts2; /* raider cells separately */
 	
 	for(int i = 1; i < argc; i++) if(argv[i][0] == '-') switch(argv[i][1]) {
 		case 'm':
@@ -54,6 +57,9 @@ int main(int argc, char **argv)
 		case 'f':
 			filter_fn = argv[i+1];
 			i++;
+			break;
+		case 'r':
+			separate_raiders = true;
 			break;
 		default:
 			fprintf(stderr, "Unknown argument: %s!\n", argv[i]);
@@ -110,6 +116,10 @@ int main(int argc, char **argv)
 		region_ids.resize(m.size(), 0);
 		res.resize(maxr + 1, 0.0);
 		cnts.resize(maxr + 1, 0);
+		if(separate_raiders) {
+			res2.resize(maxr + 1, 0.0);
+			cnts2.resize(maxr + 1, 0);
+		}
 		for(size_t i = 0; i < m.size(); i++) {
 			if(i == 0 || m[i].first != m[i-1].first) {
 				/* new dgid */
@@ -131,14 +141,24 @@ int main(int argc, char **argv)
 	while(true) {
 		unsigned int y, dgid; /* year, dgid */
 		unsigned int N; /* population to aggregate */
+		int raiders = 0; /* whether this cell is occupied by raiders */
 		
 		bool have_line = rt.read_line();
-		if(have_line && !rt.read(y, dgid, N)) break;
+		if(have_line) {
+			if(!rt.read(y, dgid, N)) break;
+			if(separate_raiders && !rt.read(raiders)) break;
+		}
 		
 		if(!have_line || y != t) {
 			/* end of input or new year -- write out current results */
-			for(unsigned int j = 0; j <= maxr; j++) if(cnts[j]) {
-				fprintf(fout, "%u\t%u\t%u\t%f\n", t, j, cnts[j], res[j]);
+			for(unsigned int j = 0; j <= maxr; j++) if(cnts[j] || (separate_raiders && cnts2[j])) {
+				fprintf(fout, "%u\t%u\t%u\t%f", t, j, cnts[j], res[j]);
+				if(separate_raiders) {
+					fprintf(fout, "\t%u\t%f\n", cnts2[j], res2[j]);
+					cnts2[j] = 0;
+					res2[j] = 0.0;
+				}
+				else fputc('\n', fout);
 				cnts[j] = 0;
 				res[j] = 0.0;
 			}
@@ -151,8 +171,14 @@ int main(int argc, char **argv)
 		unsigned int pt = it->second; /* index of the current point */
 		for(unsigned int j = region_ix[pt]; j < region_ix[pt+1]; j++) {
 			unsigned int r = region_ids[j];
-			cnts[r]++;
-			res[r] += N;
+			if(separate_raiders && raiders) {
+				cnts2[r]++;
+				res2[r] += N;
+			}
+			else {
+				cnts[r]++;
+				res[r] += N;
+			}
 		}
 	}
 	
