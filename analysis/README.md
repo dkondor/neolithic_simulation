@@ -50,24 +50,37 @@ Inputs: output of the previous step
 
 Outputs: panels for Fig. 2 in the main text and SI Figs. S6-S9.
 
+Runtime: a few minutes.
 
-### 4. ACFs of simulation results
+### 4. Plots of example simulation results
 
-The script [acf_res2.r](acf_res2.r) analysis the regionally aggregated population numbers of the simulation results directly, calculating ACFs and creating a set of plots of the distribution of ACF minima.
+The script [acf_new_aggr_ex.r] creates plots of example time series of simulation results, created with [../neolithic_cpp/simulation_runs.fsh].
+
+Inputs:
+```
+simulation/run*spaggr.out.gz
+new_grid_ids.csv
+new_grid_all.csv
+```
+
+Outputs: top panels for Figs. 4 and 5 in the main text and SI Figs. S10-S13.
+
+Runtime: a few minutes.
+
+### 5. Plots of ACF minima and CV distributions
+
+The script [acf_new_aggr_plot_rep.r] creates plots of ACF and CV distributions (histograms) from repeated simulation results, in comparison with the radiocarbon data results. This is based on the results created with the script [../neolithic_cpp/simulation_runs_rep.fsh].
 
 Inputs: <br> results from the previous step
 ```
-simulation/run*spaggr.out.gz
+simulation/runs_rep/*RData
+population/new_analysis/res_min.csv
+population/new_analysis/res_cv.csv
 ```
 
-Outputs: 
-```
-simulation/run*acf.png
-simulation/acf_cmb_{c,n}.png
-```
-Plots of ACF minimum distributions.
+Outputs: bottom panels for Figs. 4 and 5 in the main text and SI Figs. S14-S40.
 
-Runtime: a few minutes
+Runtime: a few minutes.
 
 
 
