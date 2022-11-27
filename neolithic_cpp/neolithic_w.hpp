@@ -39,7 +39,8 @@ template<class cell_collection>
 class neolithic_w : public nbase2<cell_collection> {
 protected:
 	/* main parameters -- group migration */
-	bool mobile_raiders = false; /* if true, "raiders" move to a new cell each year */
+	bool mobile_raiders = false; /* if true, "raiders" move to a new cell after each attack */
+	bool stationary_raiders_split = true; /* if true, even for stationary raiders, the origin cell is split for the first conflict */
 	bool defenders_create_raiders = false; /* if true, raiders are created if a cell is successfully defended from an attack as well */
 	bool raiders_can_revert = true; /* if true, raiders can revert to farming if they cannot find a suitable target, or if their attack fails */
 	bool raider_dist_real_pop = false; /* if true, raiders consider the real population of target cells for attack */
@@ -147,6 +148,10 @@ public:
 						break;
 					case '2':
 						new_stationary_model = true;
+						res = 1;
+						break;
+					case 'S':
+						stationary_raiders_split = false;
 						res = 1;
 						break;
 					case 0:
@@ -374,37 +379,31 @@ public:
 			
 			cell::state dsts = c2.st;
 			
-			if(c1.st == cell::state::RAIDERS) {
-				/* source cell is raiders */
+			bool conflict = false;
+			bool migration = false;
+			
+			if(c2.st != cell::state::EMPTY) {
+				if(c1.st == cell::state::FARMING &&
+					peaceful_migrations2 && c2.N + N3 < c2.K)
+						migration = true;
+				else conflict = true;
+			}
+			else migration = true; /* note: the case when raiders selected an empty cell was already handled above */
+			
+			if(conflict) {
 				double prob1 = attack_success_prob;
 				if(raider_success_dist > 0.0) prob1 *= exp(-1.0 * orders[i].dist / raider_success_dist);
 				double x1 = (prob1 < 1.0) ? pf1(rng) : 0.0;
 				if(x1 < prob1) {
 					/* successful attack */
 					attack_success++;
-					if(mobile_raiders) {
-						/* cell is abandoned, raiders move to the new cell */
-						c2.st = cell::state::RAIDERS;
-						c2.N = c1.N;
-						c1.st = cell::state::EMPTY;
-						if(empty_delay) c1.delay_counter = empty_delay;
-						c1.N = 0;
-					}
-					else {
-						/* target cell is depopulated */
-						c2.N = (unsigned int)std::round(survivor_ratio * c2.N);
-						if(!c2.N) {
-							c2.st = cell::state::EMPTY;
-							if(empty_delay) c2.delay_counter = empty_delay;
-						}
-						else if(c2.st == cell::state::RAIDERS && c2.N < raider_revert_threshold) {
-							c2.st = cell::state::FARMING;
-						}
-					}
+					if(c1.st == cell::state::RAIDERS) migration = mobile_raiders;
+					else migration = stationary_raiders_split;
 				}
 				else {
+					conflict = false;
 					attack_fail++;
-					if(!new_stationary_model) {
+					if(!new_stationary_model && c1.st == cell::state::RAIDERS) {
 						/* unsuccessful attack, raiders revert to farming or starve */
 						if(raiders_can_revert) {
 							c1.N = (unsigned int)std::max(1.0, std::round(survivor_ratio * c1.N));
@@ -426,52 +425,55 @@ public:
 					}
 				}
 			}
-			else {
-				if(c2.st == cell::state::EMPTY) {
-					c1.N -= N3;
+			
+			if(migration) {
+				if(c1.st == cell::state::FARMING) {
+					/* this is the case of mobile split-off from a farming cell */
 					c2.N = N3;
+					c1.N -= N3;
 					c2.st = cell::state::FARMING;
-				}
-				else {
-					/* non-empty cell, in this case, there is a potential for conflict */
-					if(peaceful_migrations2 && c2.N + N3 < c2.K) {
-						c1.N -= N3;
-						c2.N += N3;
-					}
-					else {
+					if(conflict) {
 						double x1 = pf1(rng);
-						if(x1 < attack_success_prob) {
-							/* attackers succeed */
-							c1.N -= N3;
-							c2.N = N3;
-							x1 = pf1(rng);
-							if(x1 < praiders) {
-								c2.st = cell::state::RAIDERS;
-								raiders_created++;
-							}
-							else c2.st = cell::state::FARMING;
-							attack_success++;
-						}
-						else {
-							/* attack failed */
-							c1.N -= N3;
-							c1.N += std::round(N3 * survivor_ratio);
-							attack_fail++;
-							if(defenders_create_raiders) {
-								x1 = pf1(rng);
-								if(x1 < praiders) {
-									c2.st = cell::state::RAIDERS;
-									raiders_created++;
-								}
-							}
+						if(x1 < praiders) {
+							c2.st = cell::state::RAIDERS;
+							raiders_created++;
 						}
 					}
 				}
-				if(c1.N == 0) {
-					/* in (the very unlikely) case that everyone migrated away, mark the source cell as empty */
+				else { /* c1.st == cell::state::RAIDERS, in this case conflict == true */
+					/* this is the case of mobile raiders */
+					c2.N = c1.N;
+					c2.st = cell::state::RAIDERS;
 					c1.st = cell::state::EMPTY;
+					c1.N = 0;
 					if(empty_delay) c1.delay_counter = empty_delay;
 				}
+			}
+			else if(conflict) {
+				/* conflict with stationary raiders or farmers */
+				/* target cell is depopulated */
+				c2.N = (unsigned int)std::round(survivor_ratio * c2.N);
+				if(!c2.N) {
+					c2.st = cell::state::EMPTY;
+					if(empty_delay) c2.delay_counter = empty_delay;
+				}
+				else if(c2.st == cell::state::RAIDERS && c2.N < raider_revert_threshold) {
+					c2.st = cell::state::FARMING;
+				}
+				if(c1.st == cell::state::FARMING) {
+					/* chance to convert to raiders in this case */
+					double x1 = pf1(rng);
+					if(x1 < praiders) {
+						c1.st = cell::state::RAIDERS;
+						raiders_created++;
+					}
+				}
+			}
+			
+			if(c1.N == 0) {
+				/* in (the very unlikely) case that everyone migrated away, mark the source cell as empty */
+				c1.st = cell::state::EMPTY;
+				if(empty_delay) c1.delay_counter = empty_delay;
 			}
 			
 			if(c2.st != dsts && dsts == cell::state::EMPTY && !this->external_helper) {
