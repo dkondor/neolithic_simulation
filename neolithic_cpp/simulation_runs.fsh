@@ -1,6 +1,6 @@
 #!/usr/bin/fish
 
-# simulation_runs.fsh -- run the simulations for a set of parameter values
+# simulation_runs.fsh -- run the simulations for a set of parameter values (examples for videos and regional time series)
 # Notes:
 #  - this script uses the syntax of the fish shell (https://github.com/fish-shell/fish-shell or https://fishshell.com/)
 #  - instead of running the whole script, it can make sense to run each section separately as needed by copying it to a shell window
@@ -31,7 +31,7 @@ end
 ###########################################################################################################
 # 2. Simulation variant including conflict
 set G1 80 # only G = 80 km case is used
-set s 4 # s = 4 (scale of climate variability)
+set s 2 # s = 2 (scale of climate variability)
 set y1 7000 # simulation start year (BCE)
 set E1 1 5 10 20 100 200 # 1 / p_E parameter
 set A1 1 2 5 10 20 50 # 1 / p_a parameter
@@ -40,7 +40,7 @@ set A1 1 2 5 10 20 50 # 1 / p_a parameter
 for E in $E1
 for A in $A1
 set pa2 (math 1/$A)
-$program_dir/n2w -Hf $base_dir/simulation/matrix_dg_G"$G1"zC10.bin -Rr -Rp 1 -RP -RA $pa2 -R 8 -m -Rs 0 -d 1 -s 1 -S 5500 -E $E -a 1.0 -o $base_dir/simulation/runmr_G"$G1"_C10_E"$E"_A"$A"_s"$s"sp.out.gz -oz -op 1 -i 1596250 -I 5000 -If 0.5 -Ip 0.5 -Ce 0 -Cb 0 -De 1 -Dm 0.5 -Db 0.25 -Dl 200 -w $base_dir/climate/cell_ids_dggrid.csv $base_dir/climate/crop_data_cmb.dat -wm -wC -wf -wF -$y1 -ws $s > $base_dir/simulation/runmr_G"$G1"_C10_E"$E"_A"$A"_s$s.out
+$program_dir/n2w -Hf $base_dir/simulation/matrix_dg_G"$G"zC10.bin -Rr -RP -RA $pa2 -R 8 -R2 -RR 0.01 -Rc -Rp 1 -Rs 0 -RS -d 1 -s 1 -S 5500 -E $E -a 0.5 -o $base_dir/simulation/runs_G"$G1"_C10_E"$E"_A"$A"_s"$s"sp.out.gz -oz -op 1 -i 1596250 -I 5000 -If 0.5 -Ip 0.5 -Ce 0 -Cb 0 -De 1 -Dm 0.5 -Db 0.25 -Dl 200 -w $base_dir/climate/cell_ids_dggrid.csv $base_dir/climate/crop_data_cmb.dat -wm -wC -wf -wF -$y1 -ws $s > $base_dir/simulation/runs_G"$G1"_C10_E"$E"_A"$A"_s$s.out
 echo $E $A
 end
 end
@@ -48,7 +48,7 @@ end
 # 2.2. aggregate results in space for further analysis
 for E in $E1
 for A in $A1
-zcat $base_dir/simulation/runmr_G"$G1"_C10_E"$E"_A"$A"_s"$s"sp.out.gz | $program_dir/spas -m $base_dir/new_grid_aggr_flat.csv -f $base_dir/new_dgid_aggr_filter.dat | gzip -c > $base_dir/simulation/runmr_G"$G1"_C10_E"$E"_A"$A"_s"$s"spaggr.out.gz
+zcat $base_dir/simulation/runs_G"$G1"_C10_E"$E"_A"$A"_s"$s"sp.out.gz | $program_dir/spas -m $base_dir/new_grid_aggr_flat.csv -f $base_dir/new_dgid_aggr_filter.dat | gzip -c > $base_dir/simulation/runs_G"$G1"_C10_E"$E"_A"$A"_s"$s"spaggr.out.gz
 echo $E $A
 end
 end
@@ -56,17 +56,10 @@ end
 # 2.3. create videos of the results with FFMPEG
 for E in $E1
 for A in $A1
-zcat $base_dir/simulation/runmr_G"$G1"_C10_E"$E"_A"$A"_s"$s"sp.out.gz | $program_dir/sp2png -oy -$y1 -op 10 -om 200 -ow 1608 -oh 900 -of $base_dir/simulation/runmr_G"$G1"_C10_E"$E"_A"$A"_s"$s".mkv -oc h264 -n $base_dir/dggrid/isea3h12eun.nbr -cp $base_dir/dggrid/dggrid_poly.csv
+zcat $base_dir/simulation/runs_G"$G1"_C10_E"$E"_A"$A"_s"$s"sp.out.gz | $program_dir/sp2png -oy -$y1 -op 10 -om 200 -ow 1608 -oh 900 -of $base_dir/simulation/runs_G"$G1"_C10_E"$E"_A"$A"_s"$s".mp4 -oc "h264 -pix_fmt yuv420p" -n $base_dir/dggrid/isea3h12eun.nbr -cp $base_dir/dggrid/dggrid_poly.csv
 end
 end
 
-# 2.4. generate a set of sampled "events" (to simulate the process of finding radiocarbon dates)
-for A in $A1
-for E in $E1
-zcat $base_dir/simulation/runmr_G"$G1"_C10_E"$E"_A"$A"_s"$s"sp.out.gz | $program_dir/sr -s (head -c 4 /dev/urandom | hexdump -e '"%u"') -m 5500 -t 41250 > $base_dir/simulation/sample_pop_G"$G1"_C10_E"$E"_A"$A"_s$s.dat
-echo $A $E
-end
-end
 
 
 ##############################################################################################################
@@ -94,14 +87,7 @@ end
 # 3.3. create videos of the results with FFMPEG
 for G in $G1
 for s in $s1
-zcat $base_dir/simulation/runG"$G"C10ws"$s"sp.out.gz | $program_dir/sp2png -oy -$y1 -op 10 -om 200 -ow 1608 -oh 900 -of $base_dir/simulation/runG"$G"C10ws"$s".mkv -oc h264 -n $base_dir/dggrid/isea3h12eun.nbr -cp $base_dir/dggrid/dggrid_poly.csv
-end
-end
-
-# 3.4. generate a set of sampled "events" (to simulate the process of finding radiocarbon dates)
-for G in $G1
-for s in $s1
-zcat $base_dir/simulation/runG"$G"C10ws"$s"sp.out.gz | $program_dir/sr -s (head -c 4 /dev/urandom | hexdump -e '"%u"') -m 5500 -t 41250 > $base_dir/simulation/sample_popn_G"$G"C10ws$s.dat
+zcat $base_dir/simulation/runG"$G"C10ws"$s"sp.out.gz | $program_dir/sp2png -oy -$y1 -op 10 -om 200 -ow 1608 -oh 900 -of $base_dir/simulation/runG"$G"C10ws"$s".mp4 -oc "h264 -pix_fmt yuv420p" -n $base_dir/dggrid/isea3h12eun.nbr -cp $base_dir/dggrid/dggrid_poly.csv
 end
 end
 

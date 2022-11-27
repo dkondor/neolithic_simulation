@@ -4,7 +4,7 @@ Agent-based simulation of interactions among groups of farmers and raiders in a 
 
 ## Examples for the simulation
 
-Examples of a few cases are given below. A more complete set of examples that are used for the main analysis of our paper are given in the script [simulation_runs.fsh] -- it is recommended to run that script in full before progressing to the data processing steps.
+Examples of a few cases are given below. A more complete set of examples that are used for the main analysis of our paper are given in the scripts [simulation_runs.fsh] and [simulation_runs_rep.fsh] -- it is recommended to run those scripts in full before progressing to the data processing steps.
 
 The below commands are provided to be run in a standard UNIX (Linux, OSX) shell (such as `bash`). They require a `C++17` compiler such as a recent version of GCC or CLang (to use CLang, replace the `g++` commands with `clang++`). The code for creating images and videos (`spout2png.cpp`) uses the [Cairo](https://www.cairographics.org/) graphics libraries. [FFMPEG](https://ffmpeg.org/) is used for creating videos. Running the below code will require at least 8GB free memory.
 
@@ -23,6 +23,7 @@ g++ -o n2 neolithic2.cpp read_table_cpp.cpp -std=gnu++17 -O3 -march=native -lm -
 g++ -o n2w neolithic2w.cpp read_table_cpp.cpp -std=gnu++17 -O3 -march=native -lm -fopenmp -pthread
 g++ -o spas spaggr_simple.cpp read_table_cpp.cpp -O3 -march=native
 g++ -o sr sample_res.cpp read_table_cpp.cpp -O3 -march=native -lm
+g++ -o rm runmultiple.cpp -pthread -O3 -march=native
 g++ -o sp2png spout2png.cpp read_table_cpp.cpp cellnet_img.cpp -O3 -march=native -std=gnu++17 -I/usr/include/cairo -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I/usr/include/pixman-1 -I/usr/include/uuid -I/usr/include/freetype2 -I/usr/include/libpng16 -lcairo
 ```
 
@@ -45,6 +46,7 @@ ln -s build/n2w
 ln -s build/spas
 ln -s build/sr
 ln -s build/sp2png
+ln -s build/rm
 ```
 
 
@@ -242,7 +244,7 @@ Parameters:
  - `-og num` gamma correction to apply to the output color scale (essentially scales output values when selecting the color of cells)
  - `-o fn` base output filename when creating a set of PNG images; image numbers are appended based on time step
  - `-of fn` output video filename; if this option is used, this program will try to run `ffmpeg` directly to create a video
- - `-oc codec` change the video codec used (only matters when using `ffmpeg`, i.e. the `-of` option); this should be something that `ffmpeg` supports, the default is `vp9` (setting this to `h264` can often result in faster encoding); additional options can also be given as part of this
+ - `-oc codec` change the video codec used (only matters when using `ffmpeg`, i.e. the `-of` option); this should be something that `ffmpeg` supports, the default is `vp9` (setting this to `h264` can often result in faster encoding); additional options can also be given as part of this, e.g. setting the output pixel format
  - `oq num` change the video encoding quality (only matters when using `ffmpeg`, i.e. the `-of` option), `num` should be a small integer (default: 15); lower numbers result in better quality and larger file sizes; setting a too low quality (a high number) will result in noticable issues, e.g. blurry or choppy videos
  
 

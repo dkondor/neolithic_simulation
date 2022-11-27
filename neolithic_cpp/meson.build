@@ -27,3 +27,4 @@ sr = executable('sr', ['sample_res.cpp', 'read_table_cpp.cpp'])
 if cairo.found() and not get_option('use_cairo').disabled()
 	sp2png = executable('sp2png', ['spout2png.cpp', 'read_table_cpp.cpp', 'cellnet_img.cpp'], dependencies: [cairo])
 endif
+rm = executable('rm', 'runmultiple.cpp', dependencies: [threads])
