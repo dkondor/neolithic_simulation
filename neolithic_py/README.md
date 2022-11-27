@@ -1,6 +1,6 @@
 # Neolithic simulation
 
-Agent-based simulation of interactions among groups of farmers and aggressors in a neolithic setting. This folder contains a Python version of the simulation variant with warfare (both stationary and roaming aggressors versions). This code is compatible with the [C++ version](../neolithic_cpp); differences in the output arise from a different random number generator used and differences in rounding in floating-point calculations.
+Agent-based simulation of interactions among groups of farmers and aggressors in a neolithic setting. This folder contains a Python version of the simulation variant with warfare (both stationary and roaming aggressors versions). Note that handling of stationary aggressors differs slightly from the [C++ version](../neolithic_cpp); to reproduce the results of our [preprint](https://osf.io/preprints/socarxiv/c32up), use that version of the simulation.
 
 ## 1. Requirements
 

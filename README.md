@@ -50,14 +50,15 @@ Python libraries used (beyond the standard library):
  - [shapely](https://github.com/shapely/shapely)
  - [networkx](https://networkx.org/)
  - [tqdm](https://tqdm.github.io/)
+ - [scipy](https://www.scipy.org)
 
 All of these should be possible to install via `pip / pip3`.
 
 Additional software dependencies:
 
  - [DGGRID](https://github.com/sahrk/DGGRID)
- - [Fish shell](https://github.com/fish-shell/fish-shell) (syntax used in some helper scripts; should be easy to adapt to other shells as well)
- - [Cairo](https://cairographics.org/) (optional; used for creating visualizations and videos of simulation outputs)
+ - [Fish shell](https://github.com/fish-shell/fish-shell) (syntax used in some scripts; should be easy to adapt to other shells as well)
+ - [Cairo](https://cairographics.org/) (optional, used for creating visualizations and videos of simulation outputs)
  - [ffmpeg](https://ffmpeg.org/) (optional, used in examples for creating videos of simulation outputs)
 
 
@@ -67,7 +68,7 @@ Additional software dependencies:
 
 2. Perform the necessary [preprocessing](preprocessing) steps.
 
-3. Run the simulation, either the [C++](neolithic_cpp) or the [Python](neolithic_py) version. Note: currently, only the C++ version includes a [script](neolithic_cpp/simulation_runs.fsh) that performs the simulation for the range of parameters used in the next steps.
+3. Run the simulation; the [C++](neolithic_cpp) is suitable for reproducing the results in our paper.
 
 4. Perform the [data analysis](analysis) steps on the simulation outputs and the radiocarbon data.
 
