@@ -40,6 +40,7 @@ template<bool have_raiders>
 struct output_files {
 	FILE* summary_out = stdout;
 	FILE* detail_out = nullptr;
+	FILE* split_pop_dist_out = nullptr;
 	unsigned int out_period = 10;
 	bool track_avg_distance = false;
 	bool write_progress = true;
@@ -71,6 +72,10 @@ struct output_files {
 				}
 				fprintf(out1, "\t%u\n", sr.group_mig_rejected); /* number of attempted split-offs that failed due to no available target */
 			}
+		}
+		
+		if(split_pop_dist_out) {
+			for(unsigned int N : sr.farmer_split_pop) fprintf(split_pop_dist_out, "%u\t%u\n", i, N);
 		}
 		
 		if(outf && (i % out_period == 0)) nn.g.write_pop(outf, i);
@@ -266,6 +271,7 @@ class neolithic_sim {
 				of.write_progress = true;
 				of.out_period = opts.out_period;
 				of.track_avg_distance = opts.track_avg_distance;
+				if(opts.out_split_pop) of.split_pop_dist_out = fopen(opts.out_split_pop, "w");
 				
 				if(opts.weather_file) {
 					weather_update_file wf;
@@ -274,6 +280,7 @@ class neolithic_sim {
 					do_one_run(nn, opts.steps, opts.start_cell, wf, of, true);
 				}
 				else do_one_run(nn, opts.steps, opts.start_cell, weather_update_noop(), of, true);
+				if(of.split_pop_dist_out) fclose(of.split_pop_dist_out);
 			}
 			
 			if(outf && outf != stdout) {

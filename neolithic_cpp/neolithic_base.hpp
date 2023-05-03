@@ -2,7 +2,7 @@
  * neolithic_base.cpp -- base class for neolithic simulations with
  * 	shared functionality
  * 
- * Copyright 2021 Daniel Kondor <kondor@csh.ac.at>
+ * Copyright 2021-2023 Daniel Kondor <kondor@csh.ac.at>
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -63,6 +63,10 @@ protected:
 	double dunbar_mig_exp = 2.0; /* exponent for Dunbar limit based split-off */
 	double dunbar_mig_base = 0.1; /* probability for split-off if population is equal to the Dunbar-number */
 	double dunbar_mig_min = 0.0; /* minimum share of people to trigger a migration (for Dunbar limit based split-off) */
+	bool logistic_split = false; /* estimate split-off probabilities from a logistic probability distribution instead */
+	double logistic_split_b1 = -18.636; /* parameters for logistic split-off distribution */
+	double logistic_split_b2 = 0.147; /* default values are from Alberti, 2014 */
+	
 	double group_mig_dist = 5.0; /* characteristic distance for group migration */
 	double pempty = 1.0; /* extra factor for preference toward "emtpy" (unsettled) cells */
 	bool target_only_free = false; /* if true, group migrations should only target cells where there is enough remaining capacity */
@@ -343,6 +347,27 @@ public:
 						dunbar_mig_min = atof(argv[i+1]);
 						res = 2;
 						break;
+					case 'L':
+						switch(argv[i][3]) {
+							case '1':
+								logistic_split_b1 = atof(argv[i+1]);
+								res = 2;
+								logistic_split = true;
+								break;
+							case '2':
+								logistic_split_b2 = atof(argv[i+1]);
+								res = 2;
+								logistic_split = true;
+								break;
+							case 0:
+								logistic_split = true;
+								res = 1;
+								break;
+							default:
+								res = -1;
+								break;
+						}
+						break;
 					default:
 						res = -1;
 						break;
@@ -420,28 +445,35 @@ public:
 		}
 				
 		double pc = 0.0; // probability of split-off due to approaching carrying capacity
-		if(cap_mig_exp >= 0.0) {
-			double tmp = 1.0;
-			if(cap_mig_exp > 0.0) {
-				tmp = c.N / c.K;
-				if(tmp >= cap_mig_min && cap_mig_min < 1.0)
-					tmp = (tmp - cap_mig_min) / (1.0 - cap_mig_min);
-				else tmp = 0.0;
-				tmp = pow(tmp, cap_mig_exp);
-			}
-			pc = cap_mig_max * tmp;
-		}
 		double pd = 0.0; // probability of split-off due to the Dunbar limit
-		if(dunbar_limit > 0.0 && dunbar_mig_exp >= 0.0) {
-			double tmp = 1.0;
-			if(dunbar_mig_exp > 0.0) {
-				tmp = c.N / dunbar_limit;
-				if(tmp >= dunbar_mig_min && dunbar_mig_min < 1.0)
-					tmp = (tmp - dunbar_mig_min) / (1.0 - dunbar_mig_min);
-				else tmp = 0.0;
-				tmp = pow(tmp, dunbar_mig_exp);
+		if(logistic_split) {
+			double tmp = logistic_split_b1 + logistic_split_b2 * c.N;
+			tmp = exp(tmp);
+			pd = dunbar_mig_base * tmp / (1.0 + tmp);
+		}
+		else {
+			if(cap_mig_exp >= 0.0) {
+				double tmp = 1.0;
+				if(cap_mig_exp > 0.0) {
+					tmp = c.N / c.K;
+					if(tmp >= cap_mig_min && cap_mig_min < 1.0)
+						tmp = (tmp - cap_mig_min) / (1.0 - cap_mig_min);
+					else tmp = 0.0;
+					tmp = pow(tmp, cap_mig_exp);
+				}
+				pc = cap_mig_max * tmp;
 			}
-			pd = dunbar_mig_base * tmp;
+			if(dunbar_limit > 0.0 && dunbar_mig_exp >= 0.0) {
+				double tmp = 1.0;
+				if(dunbar_mig_exp > 0.0) {
+					tmp = c.N / dunbar_limit;
+					if(tmp >= dunbar_mig_min && dunbar_mig_min < 1.0)
+						tmp = (tmp - dunbar_mig_min) / (1.0 - dunbar_mig_min);
+					else tmp = 0.0;
+					tmp = pow(tmp, dunbar_mig_exp);
+				}
+				pd = dunbar_mig_base * tmp;
+			}
 		}
 		
 		if(pc == 0.0 && pd == 0.0) return 0;
@@ -1329,6 +1361,8 @@ struct common_options {
 	unsigned int out_period = 10; /* write detailed output this often (if running the simulation) */
 	bool out_base_zip = false; /* set to true if the above file should be compressed with gzip */
 	
+	char* out_split_pop = nullptr; /* write out the population of cells at split-off events */
+	
 	/* cell where to seed the simulation */
 	typename cell_collection::point start_cell{};
 	bool have_start_cell = false;
@@ -1439,6 +1473,10 @@ struct common_options {
 						break;
 					case 0:
 						out_base = argv[i+1];
+						res = 2;
+						break;
+					case 'S':
+						out_split_pop = argv[i+1];
 						res = 2;
 						break;
 				}
@@ -1554,6 +1592,8 @@ struct step_res {
 	unsigned int group_mig_rejected = 0;
 	
 	typename nclass::totals t;
+	
+	std::vector<unsigned int> farmer_split_pop;
 };
 
 
@@ -1598,7 +1638,10 @@ void do_one_run(nclass& nn, unsigned int steps, typename nclass::point_type star
 					t1 = 2;
 					break;
 			}
-			if(cs.st == cell::state::FARMING) sr.farmer_targets[t1]++;
+			if(cs.st == cell::state::FARMING) {
+				sr.farmer_targets[t1]++;
+				sr.farmer_split_pop.push_back(cs.N);
+			}
 			else if(cs.st == cell::state::RAIDERS) sr.raider_targets[t1]++;
 		}
 		sr.group_mig_rejected = nn.orders_rejected;
