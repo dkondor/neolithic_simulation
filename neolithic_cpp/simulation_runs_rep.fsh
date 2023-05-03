@@ -10,6 +10,7 @@
 
 # base data directory -- change this to whatever is appropriate!
 set base_dir ~/CSH/HoloSim/data
+set data_dir $base_dir
 
 # directory of the simulation code (by default it is the current directory) -- set this to whatever is appropriate
 set code_dir .
@@ -17,6 +18,7 @@ set code_dir .
 set N 100 # number of repeated realizations (in each simulation case)
 set y1 7000 # simulation start year
 set ncores 50 # number of cores to use when running the simulation
+# note: this also needs to be adjusted in the R analysis script (acf_new_aggr_rep.r)!!
 
 # output directory
 set outdir $base_dir/simulation/runs_rep
@@ -116,6 +118,60 @@ end
 
 set d2 (date)
 echo $d1\n$d2
+end
+
+
+
+# 4. additional simulation variants:
+# 1st case: stationary aggressors, but they move when created (original fission still happens): no -RS option
+# 2nd case: aggressors do not consider cells' population when choosing a target: no -RP option
+# 3rd case: logistic model for fission probabilities (Alberti, 2014): new -DL option
+# -> 8 total combinations, run all of these for two parameter combinations
+
+
+set outdir $base_dir/simulation/runs_rep_new
+mkdir -p $outdir
+
+# simulation variants
+set ppar "" "-RP"
+set pnames 0 P
+set spar "" "-RS"
+set snames 0 S
+set lpar "" "-DL"
+set lnames 0 L
+
+# all combinations -- only G = 80, s = 2, A = 10 (i.e. p_A = 0.1); + E = 1 and 5 (i.e. p_E = 1 and 0.2)
+echo G,s,A,E,P,S,L,i,seed > $outdir/seeds_run1.csv
+for G in 80
+for s in 2
+for A in 10
+set pa2 (math 1/$A)
+for E in 1 5
+for i0 in 1 2
+for j in 1 2
+for k in 1 2
+set fnbase $outdir/res$pnames[$i0]$snames[$j]$lnames[$k]_G"$G"_C10_E"$E"_A"$A"_s"$s"
+for i in (seq $N)
+set seed (head -c 4 /dev/urandom | hexdump -e "\"%u\"")
+echo $G,$s,$A,$E,$pnames[$i0],$snames[$j],$lnames[$k],$i,$seed >> $outdir/seeds_run1.csv
+echo $code_dir/n2w -Hf $data_dir/matrix_dg_G"$G"zC10.bin -Rp 1 $ppar[$i0] -RA $pa2 -R 8 -R2 -RR 0.01 -Rc -Rp 1 -Rs 0 $spar[$j] -d 1 -s $seed -S 6000 -E $E -a 0.5 -o - -op 1 -i 1596250 -I 5000 -If 0.5 -Ip 0.5 -Ce 0 -Cb 0 -De 1 -Dm 0.5 -Db 0.25 -Dl 200 $lpar[$k] -w $data_dir/climate/cell_ids_dggrid.csv $data_dir/climate/crop_data_cmb.dat -wm -wC -wf -wF -$y1 -ws $s \| $code_dir/spas -m new_grid_aggr_flat_r500.csv -f new_dgid_aggr_filter.dat \| gzip -c \> $fnbase"_"$i.out.gz
+end
+end
+end
+end
+end | $code_dir/rm -t $ncores
+
+for E in 1 5
+for i0 in 1 2
+for j in 1 2
+for k in 1 2
+set fnbase $outdir/res$pnames[$i0]$snames[$j]$lnames[$k]_G"$G"_C10_E"$E"_A"$A"_s"$s"
+echo Rscript --verbose --no-save acf_new_aggr_rep.r $fnbase $N
+end
+end
+end
+end | $code_dir/rm -t 2
+
 end
 
 

@@ -461,3 +461,114 @@ fnbase1 = paste0(base_dir2, "/cvrepnr_G", G)
 ggsave(paste0(fnbase1, ".pdf"), p1, width=w, height=h)
 ggsave(paste0(fnbase1, ".png"), p1, width=w, height=h, dpi=300)
 
+
+######################################################################
+# 3. additional model variants (only for a limited set of parameters)
+G = 80
+s = 2
+A = 10
+EE = c(1,5)
+
+w = 3.4; h = 2.2
+
+var_P = c("0", "P")
+names_P = c("E", "F")
+var_S = c("0", "S")
+names_S = c("C", "D")
+var_L = c("0", "L")
+names_L = c("A", "B")
+
+all_aggr = data.frame()
+all_cv = data.frame()
+base_dir2 = paste0(base_dir, "/simulation/runs_rep_new")
+base_fn = "res"
+for(E in EE) for(i in 1:2) for(j in 1:2) for(k in 1:2) {
+  P = var_P[i]
+  S = var_S[j]
+  L = var_L[k]
+  name1 = paste0(names_L[k], names_S[j], names_P[i])
+  fn1 = paste0(base_dir2, "/", base_fn, P, S, L,
+               "_G", G, "_C10_E", E, "_A", A,
+               "_s", s, "_all_res.RData")
+  tmp1 = read_histograms(fn1)
+  aggr1 = aggr_hist(tmp1)
+  aggr1$E = E
+  aggr1$pe = 1 / E
+  aggr1$name = name1
+  aggr1$P = P
+  aggr1$S = S
+  aggr1$L = L
+  all_aggr = rbind(all_aggr, aggr1)
+  
+  tmp1 = read_histograms(fn1, 500, "cv", "cv", cv_bw)
+  aggr1 = aggr_hist(tmp1)
+  aggr1$E = E
+  aggr1$pe = 1 / E
+  aggr1$name = name1
+  aggr1$P = P
+  aggr1$S = S
+  aggr1$L = L
+  all_cv = rbind(all_cv, aggr1)
+}
+
+
+# do 2x2 figures (by P and S parameters -> 4 figs. in total)
+for(E in EE) for(L in c("0", "L")) {
+  tmp1 = all_aggr[all_aggr$E == E & all_aggr$L == L,]
+  tmp2 = all_cv[all_cv$E == E & all_cv$L == L,]
+  
+  p1 = ggplot(tmp1) + geom_col(data=c14_peaks, aes(x=bin, y=p), color="grey", fill="grey")
+  p1 = p1 + geom_col(aes(x=bin, y=p.mean), color="red", fill="red", alpha = 0.45)
+  p1 = p1 + theme_bw(6) + xlab("Lag [years]") + ylab("Relative frequency")
+  p1 = p1 + scale_x_continuous(limits=c(0,2200))
+  p1 = p1 + facet_grid(P~S)
+  
+  fnbase1 = paste0(base_dir2, "/acfrep", L, "_E", E)
+  ggsave(paste0(fnbase1, ".pdf"), p1, width=w, height=h)
+  ggsave(paste0(fnbase1, ".png"), p1, width=w, height=h, dpi=300)
+  
+  p1 = ggplot(tmp2) + geom_col(data=c14_cv, aes(x=bin, y=p), color="grey", fill="grey")
+  p1 = p1 + geom_col(aes(x=bin, y=p.mean), color="red", fill="red", alpha = 0.45)
+  p1 = p1 + theme_bw(6) + xlab("CV") + ylab("Relative frequency")
+  p1 = p1 + scale_x_continuous(limits=c(0,1.5))
+  p1 = p1 + facet_grid(P~S)
+  
+  fnbase1 = paste0(base_dir2, "/cvrep", L, "_E", E)
+  ggsave(paste0(fnbase1, ".pdf"), p1, width=w, height=h)
+  ggsave(paste0(fnbase1, ".png"), p1, width=w, height=h, dpi=300)
+}
+
+
+# do figures together, based on model variant "names"
+w = 4.5; h = 2.4
+for(E in EE) {
+  tmp1 = all_aggr[all_aggr$E == E,]
+  tmp2 = all_cv[all_cv$E == E,]
+  tmp1$lab = paste0(tmp1$name, " model variant")
+  tmp2$lab = paste0(tmp2$name, " model variant")
+  
+  p1 = ggplot(tmp1) + geom_col(data=c14_peaks, aes(x=bin, y=p), color="grey", fill="grey")
+  p1 = p1 + geom_col(aes(x=bin, y=p.mean), color="red", fill="red", alpha = 0.45)
+  p1 = p1 + theme_bw(6) + xlab("Lag [years]") + ylab("Relative frequency")
+  p1 = p1 + scale_x_continuous(limits=c(0,2200))
+  p1 = p1 + facet_wrap(~lab, nrow = 2, ncol = 4)
+  
+  fnbase1 = paste0(base_dir2, "/acfrep_cmb_E", E)
+  ggsave(paste0(fnbase1, ".pdf"), p1, width=w, height=h)
+  ggsave(paste0(fnbase1, ".png"), p1, width=w, height=h, dpi=300)
+  
+  
+  p1 = ggplot(tmp2) + geom_col(data=c14_cv, aes(x=bin, y=p), color="grey", fill="grey")
+  p1 = p1 + geom_col(aes(x=bin, y=p.mean), color="red", fill="red", alpha = 0.45)
+  p1 = p1 + theme_bw(6) + xlab("CV") + ylab("Relative frequency")
+  p1 = p1 + scale_x_continuous(limits=c(0,1.5))
+  p1 = p1 + facet_wrap(~lab, nrow = 2, ncol = 4)
+  
+  fnbase1 = paste0(base_dir2, "/cvrep_cmb_E", E)
+  ggsave(paste0(fnbase1, ".pdf"), p1, width=w, height=h)
+  ggsave(paste0(fnbase1, ".png"), p1, width=w, height=h, dpi=300)
+}
+
+
+
+
